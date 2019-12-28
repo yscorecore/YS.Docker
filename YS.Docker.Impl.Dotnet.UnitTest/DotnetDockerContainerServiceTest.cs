@@ -1,41 +1,22 @@
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+using Knife.Hosting.MSTest;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
 namespace YS.Docker.Impl.Dotnet.UnitTest
 {
     [TestClass]
-    public class DotnetDockerContainerServiceTest
+    public class DotnetDockerContainerServiceTest:TestBase<IDockerContainerService>
     {
-        private IDockerContainerService dockerContainerService;
-        [TestInitialize]
-        public void Setup()
-        {
-            this.OnSetup();
-        }
-        protected virtual void OnSetup()
-        {
-            this.dockerContainerService = this.OnCreateDockerContainerService();
-        }
-
-        private IDockerContainerService OnCreateDockerContainerService()
-        {
-            var host = Knife.Hosting.Host.CreateHost();
-            return host.Services.GetRequiredService<IDockerContainerService>();
-        }
-
-
         [TestMethod]
         public async Task TestEchoHello()
         {
-            string cid = await dockerContainerService.RunAsync(new DockerContainerSettings
+            string cid = await TestObject.RunAsync(new DockerContainerSettings
             {
                 ImageName = "centos",
                 Commands = new[] { "echo", "hello" },
             });
             Assert.IsNotNull(cid);
-            await dockerContainerService.StopAsync(cid);
-
+            await TestObject.StopAsync(cid);
         }
     }
 }
