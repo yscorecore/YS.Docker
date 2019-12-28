@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Diagnostics;
 
 namespace YS.Docker.Impl.Dotnet
 {
@@ -22,14 +23,12 @@ namespace YS.Docker.Impl.Dotnet
             {
                 throw new ArgumentNullException(nameof(containerSettings));
             }
+            await this.AssertImage(containerSettings);
             var response = await dockerClient.Containers.CreateContainerAsync(new CreateContainerParameters
             {
                 User = containerSettings.User,
                 Name = containerSettings.Name,
                 Image = containerSettings.ImageName,
-                AttachStdin = false,
-                AttachStdout = true,
-                AttachStderr = true,
                 Env = CreateEnvs(containerSettings),
                 ExposedPorts = CreateExposedPorts(containerSettings),
                 Cmd = (containerSettings.Commands ?? new string[] { }).ToList(),
@@ -47,6 +46,29 @@ namespace YS.Docker.Impl.Dotnet
                 throw new Exception($"Failed to start container {response.ID}.");
             }
             return response.ID;
+        }
+
+        private Task AssertImage(DockerContainerSettings containerSettings)
+        {
+            string imageName = containerSettings.ImageName;
+            if (string.IsNullOrEmpty(containerSettings.ImageName))
+            {
+                throw new ArgumentException("Image name should not be null or empty.");
+            }
+            var report = new Progress<JSONMessage>(msg =>
+            {
+                Debug.WriteLine($"Download {imageName} | {msg.Status}|{msg.ProgressMessage}|{msg.ErrorMessage}");
+            });
+
+            if (imageName.IndexOfAny(new char[] { ':', '@' }) < 0)
+            {
+                imageName = $"{imageName}:latest";
+            }
+            return dockerClient.Images.CreateImageAsync(new ImagesCreateParameters
+            {
+                FromImage = imageName,
+
+            }, new AuthConfig(), report);
         }
         private IList<string> CreateEnvs(DockerContainerSettings containerSettings)
         {

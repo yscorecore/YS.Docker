@@ -30,7 +30,7 @@ namespace YS.Docker.Impl.Dotnet.UnitTest
         {
             string cid = await dockerContainerService.RunAsync(new DockerContainerSettings
             {
-                ImageName = "centos:latest",
+                ImageName = "centos",
                 Commands = new[] { "echo", "hello" },
             });
             Assert.IsNotNull(cid);
